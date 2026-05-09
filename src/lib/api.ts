@@ -12,12 +12,12 @@ export async function fetchPostsRange(params: { sinceIso: string; untilIso: stri
   return data;
 }
 
-export async function createPost(displayName: string, body: string) {
+export async function createPost(displayName: string, body: string, coords?: { lat: number; lng: number }) {
   const res = await fetch(`/api/posts`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "application/json" },
     credentials: "include",
-    body: JSON.stringify({ displayName, body }),
+    body: JSON.stringify({ displayName, body, ...coords }),
   });
 
   const data = (await res.json().catch(() => ({}))) as

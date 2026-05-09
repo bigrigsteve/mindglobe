@@ -1,4 +1,4 @@
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { createPost } from "../lib/api";
 import { rememberEditToken } from "../lib/editTokens";
 import type { RemotePost } from "../types";
@@ -10,11 +10,36 @@ type Props = {
   onPublished: (post: RemotePost) => void;
 };
 
+type GeoState = "acquiring" | "ok" | "unavailable";
+
+function getBrowserCoords(): Promise<{ lat: number; lng: number } | null> {
+  return new Promise((resolve) => {
+    if (!navigator.geolocation) { resolve(null); return; }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => resolve(null),
+      { timeout: 8000, maximumAge: 60_000 },
+    );
+  });
+}
+
 export default function ComposeModal({ open, onClose, onPublished }: Props) {
   const [name, setName] = useState("");
   const [body, setBody] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [geoState, setGeoState] = useState<GeoState>("acquiring");
+
+  useEffect(() => {
+    if (!open) return;
+    setGeoState("acquiring");
+    setCoords(null);
+    getBrowserCoords().then((c) => {
+      setCoords(c);
+      setGeoState(c ? "ok" : "unavailable");
+    });
+  }, [open]);
 
   if (!open) return null;
 
@@ -25,7 +50,7 @@ export default function ComposeModal({ open, onClose, onPublished }: Props) {
     try {
       setBusy(true);
 
-      const { post, editToken } = await createPost(name, body);
+      const { post, editToken } = await createPost(name, body, coords ?? undefined);
       rememberEditToken(post.id, editToken);
       onPublished(post);
       setName("");
@@ -65,6 +90,12 @@ export default function ComposeModal({ open, onClose, onPublished }: Props) {
           <div className="field">
             <label htmlFor="composer-body">Thought</label>
             <textarea id="composer-body" value={body} onChange={(e) => setBody(e.target.value)} placeholder="What is alive in you today?" />
+          </div>
+
+          <div style={{ fontSize: 12, color: "rgba(230,231,246,0.45)" }}>
+            {geoState === "acquiring" && "Acquiring your location…"}
+            {geoState === "ok" && "Location acquired — your pin will land in the right place."}
+            {geoState === "unavailable" && "Location unavailable — pin will be placed by IP address."}
           </div>
 
           {error ? <div style={{ color: "#ffb4c6", fontSize: 13 }}>{error}</div> : null}

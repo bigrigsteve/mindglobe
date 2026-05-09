@@ -210,7 +210,17 @@ app.post("/api/posts", async (req, res) => {
   }
 
   const anonIp = clientIp(req) ? String(clientIp(req)).slice(0, 160) : null;
-  const geo = await locateIp(clientIp(req));
+
+  const clientLat = typeof req.body?.lat === "number" ? req.body.lat : null;
+  const clientLng = typeof req.body?.lng === "number" ? req.body.lng : null;
+  const clientCoordsValid =
+    clientLat !== null && clientLng !== null &&
+    clientLat >= -90 && clientLat <= 90 &&
+    clientLng >= -180 && clientLng <= 180;
+
+  const geo = clientCoordsValid
+    ? { lat: clientLat, lng: clientLng }
+    : await locateIp(clientIp(req));
 
   const id = randomId();
   const editRaw = randomEditToken();
