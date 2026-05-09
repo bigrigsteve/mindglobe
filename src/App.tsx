@@ -81,6 +81,9 @@ export default function App() {
     });
   }, [posts, extent, startPct, endPct]);
 
+  const handleAltitudeChange = useCallback((a: number) => setGlobeAlt(a), []);
+  const handleInspectCluster = useCallback((c: Cluster) => setSelected(c), []);
+
   const band = altitudeBand(globeAlt);
 
   const zoomHint =
@@ -94,7 +97,7 @@ export default function App() {
 
   return (
     <div className="surface">
-      <GlobeView posts={visiblePosts} onAltitudeChange={(a) => setGlobeAlt(a)} onInspectCluster={(c) => setSelected(c)} />
+      <GlobeView posts={visiblePosts} onAltitudeChange={handleAltitudeChange} onInspectCluster={handleInspectCluster} />
 
       <div className="hud-layer">
         <div style={{ position: "absolute", top: 18, left: 18, maxWidth: 360 }} className="frost" aria-live="polite">
